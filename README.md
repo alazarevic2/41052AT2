@@ -39,7 +39,7 @@ solve(jobs: list[int], m: int) -> tuple[int, list[list[int]]]
 
 - `jobs`: a list of non-negative integer processing times
 - `m`: the number of machines (must be at least 1)
-- Returns `(makespan, schedule)`, where `schedule[i]` is the list of job times given to machine i
+- Returns `(makespan, machine)`, where `machine[i]` is the list of job times given to machine i
 
 This lets the benchmarking framework run every algorithm on the same inputs.
 
