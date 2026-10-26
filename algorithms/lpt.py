@@ -13,7 +13,10 @@ def solve(jobs: list[int], m: int) -> tuple[int, list[list[int]]]:
     
     if m < 1:
         raise ValueError("m must be at least 1")
-  
+
+    if any(job < 0 for job in jobs):
+        raise ValueError("job times must be non-negative")
+        
     # Each machine starts with 0 work and no jobs
     loads = [0] * m                         # e.g. [0, 0, 0]
     machines = [[] for _ in range(m)]     # e.g. [[], [], []]

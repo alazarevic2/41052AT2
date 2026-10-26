@@ -65,3 +65,7 @@ def test_no_jobs():
 def test_no_machines():
     with pytest.raises(ValueError):
         solve([4, 7], 0)
+
+def test_negative():
+    with pytest.raises(ValueError):
+        solve([4, -3, 2], 2)
