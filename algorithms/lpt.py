@@ -5,6 +5,7 @@ Author: Anna Lazarevic
 Sorts jobs from longest to shortest, then assigns each job to the
 machine with the smallest current load.
 """
+import heapq
 
 def solve(jobs: list[int], m: int) -> tuple[int, list[list[int]]]:
 
@@ -17,20 +18,19 @@ def solve(jobs: list[int], m: int) -> tuple[int, list[list[int]]]:
     if any(job < 0 for job in jobs):
         raise ValueError("job times must be non-negative")
         
-    # Each machine starts with 0 work and no jobs
-    loads = [0] * m                         # e.g. [0, 0, 0]
+    
     machines = [[] for _ in range(m)]     # e.g. [[], [], []]
 
-    # Sort the jobs from longest to shortest
-    sorted_jobs = sorted(jobs, reverse=True)
+    # Heap of (load, machine index); every machine starts with load 0
+    heap = [(0, i) for i in range(m)]
+    heapq.heapify(heap)
 
-    for job in sorted_jobs:
-        # Find the index of the machine with the smallest load
-        i = loads.index(min(loads))
-    
-        # Give this job to machine i (update its load and add the job to its list)
-        loads[i] += job
+    for job in sorted(jobs, reverse=True):
+        # Take the least loaded machine
+        load, i = heapq.heappop(heap)
         machines[i].append(job)
+        heapq.heappush(heap, (load + job, i))
+
         
-    makespan = max(loads)
+    makespan = max(load for load, i in heap)
     return makespan, machines
