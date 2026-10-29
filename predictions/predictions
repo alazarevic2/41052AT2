@@ -1,0 +1,17 @@
+# Predictions for dp approach
+- DP will find the optimal makespan for instances it can finish.
+- More jobs will generally increase runtime and memory use.
+- More machines will generally increase the number of load states.
+- Repeated job times should produce fewer distinct states than varied times.
+- Early stopping should help when the optimum matches the lower bound.
+- DP should use more time and memory than LPT, with equal or better makespans.
+- DP should be practical mainly for smaller instances.
+- Inputs with the same job and machine counts may have very different runtimes.
+- Memoisation should reduce repeated computation compared with uncached recursion.
+- Sorting load tuples should reduce cached states compared with keeping machine order.
+- Skipping equal-load machines should reduce redundant cache lookups.
+- Early stopping should offer no benefit when the optimum exceeds the lower bound.
+- Changing job order may affect runtime but should preserve the optimal makespan.
+- Multiplying all job times by the same positive integer should preserve the state count.
+
+# Ppredictions for LPT approach
