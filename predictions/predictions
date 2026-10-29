@@ -14,4 +14,16 @@
 - Changing job order may affect runtime but should preserve the optimal makespan.
 - Multiplying all job times by the same positive integer should preserve the state count.
 
-# Ppredictions for LPT approach
+# Predictions for LPT approach
+- The LPT will run under 1ms when n <= 1000 and under 0.5 seconds for n = 100,000 staying fast on instances too large for DP.
+- For a fixed n and m, the runtime won't change as job times increase.
+- On random inputs the LPT will match the optimum on most instances and have an avg makespan no more than 5% above the optimum.
+- The LPT's error will be largest at around 2-3 jobs per machine.
+- The LPT's error will be almost always 0 at 5 or more jobs per machine.
+- LPT will be closer to the optimal makespan on inputs with a few large jobs and many small ones compared to those where all jobs are similar size.
+- LPT will reach exactly (4/3 -1/(3m)) * OPT on the worst case family.
+
+# Crossover Predictions
+- LPT will be faster than the DP on every instance tested.
+- The DP will finish within 10 s for much larger n with two machines than with three or more.
+
