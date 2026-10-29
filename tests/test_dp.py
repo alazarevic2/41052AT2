@@ -3,7 +3,13 @@ from random import Random
 
 import pytest
 
-from algorithms.dp import exact_makespan
+from algorithms.dp import exact_makespan, solve
+
+
+def check_valid_schedule(jobs, machines, makespan, assignments):
+    assert len(assignments) == machines
+    assert sorted(job for machine in assignments for job in machine) == sorted(jobs)
+    assert max(sum(machine) for machine in assignments) == makespan
 
 
 def test_balanced_two_machines():
@@ -72,3 +78,34 @@ def test_matches_exhaustive_assignments():
             expected = min(expected, max(loads))
 
         assert exact_makespan(jobs, machines) == expected, (jobs, machines)
+        makespan, assignments = solve(jobs, machines)
+        assert makespan == expected, (jobs, machines)
+        check_valid_schedule(jobs, machines, makespan, assignments)
+
+
+@pytest.mark.parametrize("jobs, machines, expected", [
+    ([], 3, 0),
+    ([0, 0, 0], 2, 0),
+    ([4, 7], 5, 7),
+    ([2, 3, 4, 5], 2, 7),
+    ([3, 3, 3], 2, 6),
+    ([10, 2, 3], 2, 10),
+    ([2, 3, 4], 1, 9),
+    ([5, 5, 4, 4, 3, 3, 3], 3, 9),
+])
+def test_solve_returns_optimal_schedule(jobs, machines, expected):
+    original_jobs = jobs.copy()
+    makespan, assignments = solve(jobs, m=machines)
+    assert makespan == expected
+    check_valid_schedule(jobs, machines, makespan, assignments)
+    assert jobs == original_jobs
+
+
+@pytest.mark.parametrize("jobs, machines", [
+    ([2, 3], 0),
+    ([], -1),
+    ([2, -3], 2),
+])
+def test_solve_rejects_invalid_input(jobs, machines):
+    with pytest.raises(ValueError):
+        solve(jobs, machines)

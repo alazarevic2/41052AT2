@@ -2,12 +2,19 @@ from functools import lru_cache
 
 
 def exact_makespan(jobs, machines):
+    """Return only the optimal makespan (the original interface)."""
+    return solve(jobs, machines)[0]
+
+
+def solve(jobs: list[int], m: int) -> tuple[int, list[list[int]]]:
     """
     Basic exact DP for identical-machine makespan scheduling.
     Author: Thomas Page
     Tries assigning each job to every machine and memoises states
     that have already been solved.
+    Returns the optimal makespan and the jobs assigned to each machine.
     """
+    machines = m
     if machines <= 0:
         raise ValueError("machines must be greater than 0")
 
@@ -50,6 +57,22 @@ def exact_makespan(jobs, machines):
 
     initial_loads = tuple([0] * machines)
 
-    return dp(0, initial_loads)
+    makespan = dp(0, initial_loads)
+
+    # Follow optimal transitions, keeping real machine identities separate
+    # from the sorted load tuples used as cache keys.
+    assignments = [[] for _ in range(machines)]
+    loads = [0] * machines
+    for job_index, job in enumerate(jobs):
+        # Match the DP's increasing-load order to reuse its cached choices.
+        for machine in sorted(range(machines), key=lambda i: loads[i]):
+            new_loads = list(loads)
+            new_loads[machine] += job
+            if dp(job_index + 1, tuple(sorted(new_loads))) == makespan:
+                assignments[machine].append(job)
+                loads = new_loads
+                break
+
+    return makespan, assignments
 
 
