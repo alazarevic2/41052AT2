@@ -73,3 +73,28 @@ def peak_memory_in_process(solve, jobs, m):
     _, peak = tracemalloc.get_traced_memory()
     tracemalloc.stop()
     return peak / 1024
+
+
+def _states_worker(jobs, m, results):
+    """Runs in the child process: solve once with the DP and report its cache stats."""
+    stats = {}
+    dp_solve(jobs, m, stats=stats)
+    results.put(stats)
+
+
+def dp_states_with_timeout(jobs, m, timeout):
+    """
+    Run the DP once in a separate process and return its cache statistics
+    (states, cache_hits, calls), or None if it did not finish in time.
+    """
+    ctx = multiprocessing.get_context("spawn")
+    results = ctx.Queue()
+    process = ctx.Process(target=_states_worker, args=(jobs, m, results))
+    process.start()
+    try:
+        stats = results.get(timeout=timeout)
+    except queue.Empty:
+        stats = None
+        process.terminate()
+    process.join()
+    return stats
