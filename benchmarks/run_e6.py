@@ -10,15 +10,15 @@ Timing, memory and cache statistics use separate calls.
 import csv
 import gc
 import json
-import os
 import random
 import statistics
 import time
 import tracemalloc
+from pathlib import Path
 
 from benchmarks.dp_variants import VARIANTS, solve
 from benchmarks.generators import balanced, repeated_sizes, uniform
-from benchmarks.run_e4 import fresh_process_trial
+from benchmarks.process_helpers import fresh_process_trial
 
 
 N = 10                                      # jobs per instance
@@ -78,7 +78,13 @@ def measure(jobs, variant):
     completed = [trial for trial in trials if trial["status"] == "ok"]
     samples = [trial["seconds"] for trial in completed]
     result = completed[-1] if completed else {}
-    status = trials[-1]["status"]
+    failure = next((trial for trial in trials if trial["status"] != "ok"), None)
+    if len(completed) == REPEATS:
+        status = "ok"
+    elif completed:
+        status = "partial"
+    else:
+        status = failure["status"]
     counts = run_once(jobs, variant, collect_stats=True) if status == "ok" else {"status": "skipped"}
     memory = run_once(jobs, variant, memory=True) if status == "ok" else {"status": "skipped"}
     for extra in (counts, memory):
@@ -87,7 +93,7 @@ def measure(jobs, variant):
     minimum, median, iqr = timing_summary(samples) if samples else (None, None, None)
     return {
         "status": status,
-        "error": trials[-1].get("error", ""),
+        "error": failure.get("error", "") if failure else "",
         "makespan": result.get("makespan"),
         "stats_status": counts["status"],
         "stats_error": counts.get("error", ""),
@@ -106,7 +112,10 @@ def measure(jobs, variant):
 
 
 def main():
-    os.makedirs("benchmarks/results", exist_ok=True)
+    if not 1 <= M <= N or REPEATS < 1 or TIMEOUT <= 0 or MAX_TIME < N:
+        raise ValueError("invalid E6 configuration")
+    path = Path(OUTPUT)
+    path.parent.mkdir(parents=True, exist_ok=True)
     configs = [(family, seed) for family in FAMILIES for seed in SEEDS]
     random.Random(0).shuffle(configs)
     fields = ["family", "n", "m", "seed", "jobs", "variant", "status", "error",
@@ -114,7 +123,7 @@ def main():
               "completed_repeats", "samples_seconds", "min_seconds", "median_seconds",
               "iqr_seconds", "memory_status", "peak_python_bytes"]
 
-    with open(OUTPUT, "w", newline="") as output:
+    with path.open("w", newline="") as output:
         writer = csv.DictWriter(output, fieldnames=fields)
         writer.writeheader()
         for family, seed in configs:
@@ -134,7 +143,7 @@ def main():
                 output.flush()
                 print(f"{family} seed={seed} {variant}: {result['status']}", flush=True)
 
-    print(f"Saved {OUTPUT}")
+    print(f"Saved {path}")
 
 
 if __name__ == "__main__":
