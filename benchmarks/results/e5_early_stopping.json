@@ -1,0 +1,23 @@
+{
+  "experiment": "E5 early stopping",
+  "utc": "2026-10-30T05:17:05.503588+00:00",
+  "python": "3.15.2 (main, Oct 25 2026, 16:57:51) [Clang 17.0.0 (clang-1700.6.4.2)]",
+  "platform": "macOS-27.2-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "processor": "arm",
+  "parameters": {
+    "n": 12,
+    "m": 3,
+    "seeds": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "repeats": 3,
+    "timeout": 10,
+    "target": 100
+  },
+  "notes": "Paired on/off DP calls on identical jobs. E4 timeout/memory helpers. LPT makespan is an untimed reference. Memory is Python allocations, not RSS. Cache counts include reconstruction. Configuration shuffle seed is 0."
+}

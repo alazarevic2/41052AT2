@@ -13,8 +13,8 @@ def exact_makespan(jobs, machines):
     return solve(jobs, machines)[0]
 
 
-def solve(jobs: list[int], m: int, *, stats=None) -> tuple[int, list[list[int]]]:
-    """Optionally fill stats with cache counts; the schedule return is unchanged."""
+def solve(jobs: list[int], m: int, *, stats=None, early_stop=True) -> tuple[int, list[list[int]]]:
+    """Optionally collect cache stats or disable early stopping for experiments."""
     machines = m
     if machines <= 0:
         raise ValueError("machines must be greater than 0")
@@ -51,7 +51,7 @@ def solve(jobs: list[int], m: int, *, stats=None) -> tuple[int, list[list[int]]]
             best = min(best, result)
 
             # No schedule can beat this bound, so this state is solved.
-            if best == lower_bound:
+            if early_stop and best == lower_bound:
                 return best
 
         return best
