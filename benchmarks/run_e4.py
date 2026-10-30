@@ -70,11 +70,11 @@ def _dp_worker(connection, jobs, machines, memory, early_stop=True):
         connection.close()
 
 
-def dp_trial(jobs, machines, memory=False, timeout=TIMEOUT, early_stop=True):
-    """One solve per child. Startup is excluded from timing and the solve cap."""
+def fresh_process_trial(worker, args, timeout):
+    """Run a ready-signalling worker with startup excluded from its time limit."""
     context = multiprocessing.get_context("spawn")
     receiver, sender = context.Pipe(duplex=False)
-    process = context.Process(target=_dp_worker, args=(sender, jobs, machines, memory, early_stop))
+    process = context.Process(target=worker, args=(sender, *args))
     process.start()
     sender.close()
     try:
@@ -94,6 +94,11 @@ def dp_trial(jobs, machines, memory=False, timeout=TIMEOUT, early_stop=True):
         process.join()
         process.close()
         receiver.close()
+
+
+def dp_trial(jobs, machines, memory=False, timeout=TIMEOUT, early_stop=True):
+    """One solve per child. Startup is excluded from timing and the solve cap."""
+    return fresh_process_trial(_dp_worker, (jobs, machines, memory, early_stop), timeout)
 
 
 def measure_dp(jobs):
