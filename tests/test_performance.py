@@ -1,12 +1,12 @@
 """Shared experiments: pytest tests/test_performance.py -s -q
 Author: Thomas Page
 Author: Anna Lazarevic
-Times include the full solve call, including schedule reconstruction. Each
-call has a fresh DP cache. Input generation, copying, garbage collection and
-schedule checks are outside the timed section. No timing thresholds are used.
+Times full solve calls with fresh caches; measures peak memory separately.
+Setup and validation are excluded from measurements.
 """
 
 import gc
+import tracemalloc
 from statistics import median
 from time import perf_counter
 
@@ -21,7 +21,7 @@ from benchmarks.generators import (
 )
 
 
-SEED = 41052
+SEED = 67
 REPEATS = 5
 FAMILIES = {
     "uniform": lambda n, m: uniform(n, 100, seed=SEED),
@@ -54,20 +54,39 @@ def measure(solver, jobs, machines):
     return median(times), makespans[0]
 
 
+def measure_peak_memory(solver, jobs, machines, expected):
+    gc.collect()
+    input_jobs = jobs.copy()
+    tracemalloc.start()
+    try:
+        makespan, assignments = solver(input_jobs, machines)
+        _, peak_bytes = tracemalloc.get_traced_memory()
+    finally:
+        tracemalloc.stop()
+
+    assert makespan == expected
+    return peak_bytes / 1024
+
+
 @pytest.fixture(scope="module")
 def table_header():
     print(f"\nSeed={SEED}; median of {REPEATS} runs; times in milliseconds.")
+    print("Memory: peak Python allocations in KiB from one separate call per solver.")
     print(f"{'Family':<13} {'Jobs':>4} {'M':>3} {'DP ms':>11} {'LPT ms':>11} "
+          f"{'DP KiB':>11} {'LPT KiB':>11} "
           f"{'OPT':>6} {'LPT':>6} {'Ratio':>7}")
 
 
 def compare(family, jobs, machines):
     dp_ms, optimum = measure(dp_solve, jobs, machines)
     lpt_ms, approximate = measure(lpt_solve, jobs, machines)
+    dp_kib = measure_peak_memory(dp_solve, jobs, machines, optimum)
+    lpt_kib = measure_peak_memory(lpt_solve, jobs, machines, approximate)
     assert approximate >= optimum
     ratio = approximate / optimum
     print(f"{family:<13} {len(jobs):>4} {machines:>3} {dp_ms:>11.4f} "
-          f"{lpt_ms:>11.4f} {optimum:>6} {approximate:>6} {ratio:>7.3f}")
+          f"{lpt_ms:>11.4f} {dp_kib:>11.2f} {lpt_kib:>11.2f} "
+          f"{optimum:>6} {approximate:>6} {ratio:>7.3f}")
     return optimum, approximate
 
 
@@ -115,5 +134,4 @@ def test_reordered_performance(order, machines, size, table_header):
     ordered_jobs = reordered(jobs, order, seed=SEED)
     optimum, approximate = compare(order, ordered_jobs, machines)
     assert optimum == baseline_optimum
-    # LPT sorts internally, so input ordering cannot change its makespan.
     assert approximate == baseline_lpt
