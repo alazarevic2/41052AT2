@@ -54,3 +54,25 @@ From the repository root:
 ```text
 python -m pytest
 ```
+
+## Shared Performance Experiments
+
+Run both algorithms on identical generated inputs and show the result table:
+
+```text
+pytest tests/test_performance.py -s -q
+```
+
+The table reports median runtime over five fresh calls, both makespans, and
+the ratio LPT / OPT (1.0 means LPT is optimal). Random inputs use seed 41052.
+Cases cover six input families with 6, 10, and 12 jobs on 2 and 3 machines,
+plus the known LPT worst-case family on 2 to 4 machines.
+The separate DP known-optimum generator is also tested on 2 to 4 machines
+(it produces the same mathematical input family). Scaling experiments multiply
+uniform job times by 10 and 100. Ordering experiments use original, ascending,
+descending, and shuffled uniform inputs. Both use the same job counts, machine
+counts, and seed as the family comparisons. Checks verify that scaling multiplies
+both makespans by the factor and reordering preserves both makespans.
+Times include schedule reconstruction but exclude input preparation and result
+checks. Garbage collection runs before each measurement. Timings vary between
+machines and runs; the tests validate results without imposing speed thresholds.
