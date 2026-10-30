@@ -5,18 +5,14 @@ Use --smoke for a short check. Full sweeps can take hours near the DP limit.
 
 import argparse
 import csv
-import gc
 import hashlib
 import json
 import random
 import statistics
-import time
 from pathlib import Path
 
-from algorithms.lpt import solve as lpt_solve
-from benchmarks.common import peak_memory_in_process
 from benchmarks.generators import highly_varied, repeated_sizes, uniform
-from benchmarks.run_e4 import dp_trial, timing_summary
+from benchmarks.run_e4 import measure_dp as shared_measure_dp, measure_lpt as shared_measure_lpt
 
 
 SIZES = list(range(8, 33, 2))
@@ -38,52 +34,26 @@ def make_jobs(family, n, seed):
 
 
 def measure_dp(jobs, m, timeout, repeats):
-    trials = []
-    for _ in range(repeats):
-        trial = dp_trial(jobs, m, timeout=timeout)
-        trials.append(trial)
-        if trial["status"] != "ok":
-            break
-    completed = [trial for trial in trials if trial["status"] == "ok"]
-    samples = [trial["seconds"] for trial in completed]
-    last = completed[-1] if completed else {}
-    memory = {"status": "skipped"}
-    if trials[-1]["status"] == "ok":
-        memory = dp_trial(jobs, m, memory=True, timeout=timeout)
+    result = shared_measure_dp(jobs, machines=m, repeats=repeats, timeout=timeout)
     return {
-        "dp_status": trials[-1]["status"], "dp_error": trials[-1].get("error", ""),
-        "dp_completed_repeats": len(samples), "optimum": last.get("makespan"),
-        "dp_states": last.get("states"), "dp_cache_hits": last.get("cache_hits"),
-        "dp_calls": last.get("calls"), "dp_samples_seconds": json.dumps(samples),
-        **{"dp_" + key: value for key, value in timing_summary(samples).items()},
-        "dp_memory_status": memory["status"],
-        "dp_peak_kib": memory["peak_python_bytes"] / 1024 if memory.get("peak_python_bytes") is not None else None,
+        "dp_status": result["status"], "dp_error": result["error"],
+        "dp_completed_repeats": result["completed_repeats"], "optimum": result["makespan"],
+        "dp_stats_status": result["stats_status"], "dp_states": result["states"],
+        "dp_cache_hits": result["cache_hits"], "dp_calls": result["calls"],
+        "dp_samples_seconds": result["samples_seconds"],
+        **{"dp_" + key: result[key] for key in ("min_seconds", "median_seconds", "iqr_seconds")},
+        "dp_memory_status": result["memory_status"],
+        "dp_peak_kib": result["peak_python_bytes"] / 1024 if result["peak_python_bytes"] is not None else None,
     }
 
 
 def measure_lpt(jobs, m):
-    lpt_solve(jobs, m)  # Untimed warm-up.
-    batch = 1
-    while True:
-        start = time.perf_counter()
-        for _ in range(batch):
-            lpt_solve(jobs, m)
-        if time.perf_counter() - start >= BATCH_SECONDS:
-            break
-        batch *= 2
-    samples = []
-    for _ in range(LPT_REPEATS):
-        gc.collect()
-        start = time.perf_counter()
-        for _ in range(batch):
-            makespan, assignments = lpt_solve(jobs, m)
-        samples.append((time.perf_counter() - start) / batch)
-    gc.collect()
+    result = shared_measure_lpt(jobs, machines=m, repeats=LPT_REPEATS, batch_seconds=BATCH_SECONDS)
     return {
-        "lpt_makespan": makespan, "lpt_batch_calls": batch,
-        "lpt_samples_seconds": json.dumps(samples),
-        **{"lpt_" + key: value for key, value in timing_summary(samples).items()},
-        "lpt_peak_kib": peak_memory_in_process(lpt_solve, jobs, m),
+        "lpt_makespan": result["makespan"], "lpt_batch_calls": result["batch_calls"],
+        "lpt_samples_seconds": result["samples_seconds"],
+        **{"lpt_" + key: result[key] for key in ("min_seconds", "median_seconds", "iqr_seconds")},
+        "lpt_peak_kib": result["peak_python_bytes"] / 1024,
     }
 
 
@@ -125,7 +95,7 @@ def write_summary(path, rows):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--smoke", action="store_true", help="12 small instances; not report evidence")
-    parser.add_argument("--timeout", type=float, default=10, help="seconds per DP call, excluding startup")
+    parser.add_argument("--timeout", type=float, default=10, help="seconds waiting for each DP process result, including startup")
     parser.add_argument("--output", help="override output CSV path")
     args = parser.parse_args(argv)
     if args.timeout <= 0 or MAX_TIME < max(SIZES):

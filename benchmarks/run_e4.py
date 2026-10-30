@@ -12,6 +12,10 @@ from pathlib import Path
 
 from algorithms.dp import solve as dp_solve
 from algorithms.lpt import solve as lpt_solve
+from benchmarks.common import (
+    dp_states_with_timeout, peak_memory_in_process, run_with_timeout,
+    time_in_process,
+)
 from benchmarks.generators import (
     balanced, few_large_many_small, highly_varied, repeated_sizes,
     similar_sized, uniform,
@@ -97,54 +101,63 @@ def dp_trial(jobs, machines, memory=False, timeout=TIMEOUT, early_stop=True):
     return fresh_process_trial(_dp_worker, (jobs, machines, memory, early_stop), timeout)
 
 
-def measure_dp(jobs):
+def measure_dp(jobs, machines=None, repeats=None, timeout=None):
+    machines = M if machines is None else machines
+    repeats = DP_REPEATS if repeats is None else repeats
+    timeout = TIMEOUT if timeout is None else timeout
     trials = []
-    for _ in range(DP_REPEATS):
-        trial = dp_trial(jobs, M, timeout=TIMEOUT)
+    for _ in range(repeats):
+        trial = run_with_timeout("dp", jobs, machines, timeout)
         trials.append(trial)
-        if trial["status"] != "ok":
+        if trial is None:
             break
-    samples = [trial["seconds"] for trial in trials if trial["status"] == "ok"]
-    completed = [trial for trial in trials if trial["status"] == "ok"]
-    status = trials[-1]["status"]
-    # A traced-call timeout is separate from a timed-call timeout.
-    memory = dp_trial(jobs, M, memory=True, timeout=TIMEOUT) if status == "ok" else {"status": "skipped"}
-    last = completed[-1] if completed else {}
-    return {"status": status, "error": trials[-1].get("error", ""),
-            "makespan": last.get("makespan"), "states": last.get("states"),
-            "cache_hits": last.get("cache_hits"), "calls": last.get("calls"),
+    completed = [trial for trial in trials if trial is not None]
+    samples = [trial[1] for trial in completed]
+    status = "ok" if trials[-1] is not None else "DNF"
+    stats = memory = None
+    if status == "ok":
+        # Shared helpers collect statistics and memory in separate solves.
+        stats = dp_states_with_timeout(jobs, machines, timeout)
+        memory = run_with_timeout("dp", jobs, machines, timeout, measure_memory=True)
+    stats_status = ("ok" if stats is not None else "DNF") if status == "ok" else "skipped"
+    memory_status = ("ok" if memory is not None else "DNF") if status == "ok" else "skipped"
+    stats = stats or {}
+    return {"status": status, "error": "" if status == "ok" else "no result before timeout",
+            "makespan": completed[-1][0] if completed else None, "states": stats.get("states"),
+            "stats_status": stats_status, "cache_hits": stats.get("cache_hits"), "calls": stats.get("calls"),
             "samples_seconds": json.dumps(samples), "completed_repeats": len(samples),
-            "batch_calls": 1, "memory_status": memory["status"],
-            "peak_python_bytes": memory.get("peak_python_bytes"), **timing_summary(samples)}
+            "batch_calls": 1, "memory_status": memory_status,
+            "peak_python_bytes": memory[2] * 1024 if memory is not None else None,
+            **timing_summary(samples)}
 
 
-def measure_lpt(jobs):
+def measure_lpt(jobs, machines=None, repeats=None, batch_seconds=None):
+    machines = M if machines is None else machines
+    repeats = LPT_REPEATS if repeats is None else repeats
+    batch_seconds = BATCH_SECONDS if batch_seconds is None else batch_seconds
     # Warm-up and calibration are not included in reported timing samples.
-    lpt_solve(jobs, M)
+    lpt_solve(jobs, machines)
     batch = 1
-    while True:
-        start = time.perf_counter()
+
+    def batch_solve(jobs, machines):
         for _ in range(batch):
-            lpt_solve(jobs, M)
-        if time.perf_counter() - start >= BATCH_SECONDS:
+            result = lpt_solve(jobs, machines)
+        return result
+
+    while True:
+        _, seconds = time_in_process(batch_solve, jobs, machines, 1)
+        if seconds >= batch_seconds:
             break
         batch *= 2
     samples = []
-    for _ in range(LPT_REPEATS):
+    for _ in range(repeats):
         gc.collect()
-        start = time.perf_counter()
-        for _ in range(batch):
-            makespan, assignments = lpt_solve(jobs, M)
-        samples.append((time.perf_counter() - start) / batch)
+        makespan, seconds = time_in_process(batch_solve, jobs, machines, 1)
+        samples.append(seconds / batch)
     gc.collect()
-    tracemalloc.start()
-    try:
-        result = lpt_solve(jobs, M)
-        peak = tracemalloc.get_traced_memory()[1]
-    finally:
-        tracemalloc.stop()
+    peak = peak_memory_in_process(lpt_solve, jobs, machines) * 1024
     return {"status": "ok", "error": "", "makespan": makespan, "states": None,
-            "cache_hits": None, "calls": None, "samples_seconds": json.dumps(samples),
+            "stats_status": "not_applicable", "cache_hits": None, "calls": None, "samples_seconds": json.dumps(samples),
             "completed_repeats": len(samples), "batch_calls": batch,
             "memory_status": "ok", "peak_python_bytes": peak, **timing_summary(samples)}
 
@@ -159,7 +172,7 @@ def main():
     configs = [(family, seed) for family in FAMILIES for seed in SEEDS]
     random.Random(0).shuffle(configs)
     fields = ["family", "n", "m", "seed", "jobs", "algorithm", "status", "error",
-              "makespan", "optimum", "relative_error_percent", "states", "cache_hits", "calls",
+              "makespan", "optimum", "relative_error_percent", "states", "stats_status", "cache_hits", "calls",
               "completed_repeats", "batch_calls", "samples_seconds", "min_seconds",
               "median_seconds", "iqr_seconds", "memory_status", "peak_python_bytes"]
     with path.open("w", newline="") as output:
