@@ -4,6 +4,7 @@ E6: cumulative DP optimisation variants
 Compares uncached recursion, caching, sorted load states, equal-load
 skipping, and lower-bound early stopping on the same small instances.
 Records optimal-value search only; assignment reconstruction is excluded.
+Timing, memory and cache statistics use separate calls.
 """
 
 import csv
@@ -34,15 +35,15 @@ FAMILIES = {
 }
 
 
-def _worker(connection, jobs, variant, memory):
+def _worker(connection, jobs, variant, memory, collect_stats):
     try:
         gc.collect()
         connection.send({"status": "ready"})
         if memory:
             tracemalloc.start()
-        start = time.perf_counter()
-        makespan, stats = solve(jobs, M, variant)
-        seconds = time.perf_counter() - start
+        start = time.perf_counter() if not memory and not collect_stats else None
+        makespan, stats = solve(jobs, M, variant, collect_stats=collect_stats)
+        seconds = time.perf_counter() - start if start is not None else None
         peak = tracemalloc.get_traced_memory()[1] if memory else None
         if memory:
             tracemalloc.stop()
@@ -56,8 +57,8 @@ def _worker(connection, jobs, variant, memory):
         connection.close()
 
 
-def run_once(jobs, variant, memory=False):
-    return fresh_process_trial(_worker, (jobs, variant, memory), TIMEOUT)
+def run_once(jobs, variant, memory=False, collect_stats=False):
+    return fresh_process_trial(_worker, (jobs, variant, memory, collect_stats), TIMEOUT)
 
 
 def timing_summary(samples):
@@ -78,16 +79,22 @@ def measure(jobs, variant):
     samples = [trial["seconds"] for trial in completed]
     result = completed[-1] if completed else {}
     status = trials[-1]["status"]
+    counts = run_once(jobs, variant, collect_stats=True) if status == "ok" else {"status": "skipped"}
     memory = run_once(jobs, variant, memory=True) if status == "ok" else {"status": "skipped"}
+    for extra in (counts, memory):
+        if extra["status"] == "ok" and extra["makespan"] != result["makespan"]:
+            raise RuntimeError(f"measurement passes disagree for {variant}")
     minimum, median, iqr = timing_summary(samples) if samples else (None, None, None)
     return {
         "status": status,
         "error": trials[-1].get("error", ""),
         "makespan": result.get("makespan"),
-        "calls": result.get("calls"),
-        "evaluations": result.get("evaluations"),
-        "cached_states": result.get("cached_states"),
-        "cache_hits": result.get("cache_hits"),
+        "stats_status": counts["status"],
+        "stats_error": counts.get("error", ""),
+        "calls": counts.get("calls"),
+        "evaluations": counts.get("evaluations"),
+        "cached_states": counts.get("cached_states"),
+        "cache_hits": counts.get("cache_hits"),
         "completed_repeats": len(samples),
         "samples_seconds": json.dumps(samples),
         "min_seconds": minimum,
@@ -103,7 +110,7 @@ def main():
     configs = [(family, seed) for family in FAMILIES for seed in SEEDS]
     random.Random(0).shuffle(configs)
     fields = ["family", "n", "m", "seed", "jobs", "variant", "status", "error",
-              "makespan", "calls", "evaluations", "cached_states", "cache_hits",
+              "makespan", "stats_status", "stats_error", "calls", "evaluations", "cached_states", "cache_hits",
               "completed_repeats", "samples_seconds", "min_seconds", "median_seconds",
               "iqr_seconds", "memory_status", "peak_python_bytes"]
 
