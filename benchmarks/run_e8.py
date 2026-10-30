@@ -1,6 +1,5 @@
 """
 E8: LPT runtime at scale
-Author: Anna Lazarevic
 
 Times LPT on uniform random instances with n from 100 to 100,000
 and saves the median runtime of each instance to a CSV file

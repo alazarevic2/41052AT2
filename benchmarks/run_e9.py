@@ -1,6 +1,5 @@
 """
 E9: LPT worst case
-Author: Anna Lazarevic
 
 Runs both algorithms on Graham's worst-case family for m = 2 to 10
 machines. Checks that LPT's makespan divided by the optimum equals
