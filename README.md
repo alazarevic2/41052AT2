@@ -67,3 +67,14 @@ pytest tests/test_performance.py -s -q
 - Uses all generators, with seed.
 - Tests 6, 10, and 12 jobs on 2–3 machines; known-optimum cases use 2–4 machines.
 - Measures full solve calls; excludes setup and validation. Memory is traced separately using `tracemalloc` and excludes total process memory.
+
+## E5: Early Stopping
+
+```text
+python -m benchmarks.run_e5
+```
+
+- Compares DP early stopping on/off on identical jobs: 12 jobs, 3 machines, five seeds, three timing runs.
+- Balanced inputs achieve the lower bound; above-bound inputs have loads restricted to multiples of 3 but a bound that is not a multiple of 3, proving OPT is higher.
+- Saves timing samples, min/median/IQR, cache counts, and separate peak Python memory to `benchmarks/results/e5_early_stopping.csv`, with settings in `.json`.
+- Reuses E4's 10-second timeout helper. LPT makespan is recorded as an untimed reference. The DP's default behaviour is unchanged.
