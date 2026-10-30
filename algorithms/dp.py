@@ -13,7 +13,8 @@ def exact_makespan(jobs, machines):
     return solve(jobs, machines)[0]
 
 
-def solve(jobs: list[int], m: int) -> tuple[int, list[list[int]]]:
+def solve(jobs: list[int], m: int, *, stats=None) -> tuple[int, list[list[int]]]:
+    """Optionally fill stats with cache counts; the schedule return is unchanged."""
     machines = m
     if machines <= 0:
         raise ValueError("machines must be greater than 0")
@@ -72,6 +73,11 @@ def solve(jobs: list[int], m: int) -> tuple[int, list[list[int]]]:
                 assignments[machine].append(job)
                 loads = new_loads
                 break
+
+    if stats is not None:
+        cache = dp.cache_info()
+        stats.update(states=cache.currsize, cache_hits=cache.hits,
+                     calls=cache.misses + cache.hits)
 
     return makespan, assignments
 

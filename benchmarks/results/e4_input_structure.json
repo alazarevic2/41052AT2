@@ -1,0 +1,35 @@
+{
+  "experiment": "E4 input structure",
+  "utc": "2026-10-30T05:11:03.623426+00:00",
+  "python": "3.15.2 (main, Oct 25 2026, 16:57:51) [Clang 17.0.0 (clang-1700.6.4.2)]",
+  "platform": "macOS-27.2-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "processor": "arm",
+  "logical_cpus": 8,
+  "parameters": {
+    "N": 12,
+    "M": 3,
+    "SEEDS": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "DP_REPEATS": 3,
+    "LPT_REPEATS": 5,
+    "TIMEOUT": 10,
+    "TIME_RANGE": 100,
+    "BATCH_SECONDS": 0.02
+  },
+  "families": [
+    "uniform",
+    "repeated",
+    "varied",
+    "large_small",
+    "similar",
+    "balanced"
+  ],
+  "configuration_shuffle_seed": 0,
+  "notes": "Full solve calls; DP stats include reconstruction. Separate traced memory calls. DP has no warm-up (fresh process/cache per sample); LPT uses warm-up and batches. Memory is Python allocation. Nonuniform families have different distributions."
+}
