@@ -2,10 +2,7 @@
 
 import csv
 import json
-import platform
 import random
-import sys
-from datetime import datetime, timezone
 from pathlib import Path
 
 from algorithms.lpt import solve as lpt_solve
@@ -67,17 +64,6 @@ def main():
         raise ValueError("require 2 <= M < N, positive repeats/timeout and a sufficient target")
     path = Path(OUTPUT)
     path.parent.mkdir(parents=True, exist_ok=True)
-    metadata = {
-        "experiment": "E5 early stopping", "utc": datetime.now(timezone.utc).isoformat(),
-        "python": sys.version, "platform": platform.platform(),
-        "machine": platform.machine(), "processor": platform.processor(),
-        "parameters": {"n": N, "m": M, "seeds": SEEDS, "repeats": REPEATS,
-                       "timeout": TIMEOUT, "target": TARGET},
-        "notes": "Paired on/off DP calls on identical jobs. E4 timeout/memory helpers. "
-                 "LPT makespan is an untimed reference. Memory is Python allocations, not RSS. "
-                 "Cache counts include reconstruction. Configuration shuffle seed is 0.",
-    }
-    path.with_suffix(".json").write_text(json.dumps(metadata, indent=2) + "\n")
     configs = [(family, seed) for family in ("balanced", "above_bound") for seed in SEEDS]
     random.Random(0).shuffle(configs)
     fields = ["family", "n", "m", "seed", "jobs", "early_stop", "lower_bound", "lpt_makespan",
@@ -99,7 +85,7 @@ def main():
                                  "lower_bound": lower_bound(jobs), "lpt_makespan": reference, **result})
                 output.flush()
                 print(f"{family} seed={seed} early_stop={enabled}: {result['status']}", flush=True)
-    print(f"Saved {path} and {path.with_suffix('.json')}")
+    print(f"Saved {path}")
 
 
 if __name__ == "__main__":

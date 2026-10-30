@@ -4,14 +4,10 @@ import csv
 import gc
 import json
 import multiprocessing
-import os
-import platform
 import random
 import statistics
-import sys
 import time
 import tracemalloc
-from datetime import datetime, timezone
 from pathlib import Path
 
 from algorithms.dp import solve as dp_solve
@@ -160,19 +156,6 @@ def main():
         raise ValueError("TIME_RANGE is too small for the configured generators")
     path = Path(OUTPUT)
     path.parent.mkdir(parents=True, exist_ok=True)
-    metadata = {
-        "experiment": "E4 input structure", "utc": datetime.now(timezone.utc).isoformat(),
-        "python": sys.version, "platform": platform.platform(),
-        "machine": platform.machine(), "processor": platform.processor(),
-        "logical_cpus": os.cpu_count(),
-        "parameters": {name: globals()[name] for name in (
-            "N", "M", "SEEDS", "DP_REPEATS", "LPT_REPEATS", "TIMEOUT", "TIME_RANGE", "BATCH_SECONDS")},
-        "families": list(FAMILIES), "configuration_shuffle_seed": 0,
-        "notes": "Full solve calls; DP stats include reconstruction. Separate traced memory calls. "
-                 "DP has no warm-up (fresh process/cache per sample); LPT uses warm-up and batches. "
-                 "Memory is Python allocations, not RSS. Nonuniform families have different distributions.",
-    }
-    path.with_suffix(".json").write_text(json.dumps(metadata, indent=2) + "\n")
     configs = [(family, seed) for family in FAMILIES for seed in SEEDS]
     random.Random(0).shuffle(configs)
     fields = ["family", "n", "m", "seed", "jobs", "algorithm", "status", "error",
@@ -201,7 +184,7 @@ def main():
                                  "optimum": optimum, "relative_error_percent": error})
             output.flush()
             print(f"{family} seed={seed}: DP={dp_result['status']}; LPT=ok", flush=True)
-    print(f"Saved {path} and {path.with_suffix('.json')}")
+    print(f"Saved {path}")
 
 
 if __name__ == "__main__":
