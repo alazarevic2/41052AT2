@@ -2,6 +2,8 @@
 
 41052 - Advanced Algorithms Programming Assignment 2
 
+[Video Presentation Link](https://www.youtube.com/watch?v=PVLWi72qLqE) 
+
 ## Makespan Scheduling: Exact DP vs LPT Approximation
 
 **Problem:** Given n jobs with processing times and m identical machines, assign each job to a machine to minimise the makespan (the maximum machine load).
@@ -14,19 +16,38 @@
 | LPT (Longest Processing Time first) | 4/3-approximation | `algorithms/lpt.py` | Anna Lazarevic |
 
 ## Project Structure
+
 ```text
 41052AT2/
-├── README.md
-├── requirements.txt
 ├── .gitignore
-├── algorithms/          # One module per algorithm
-│   ├── __init__.py
-│   ├── dp.py            # Exact DP (Thomas Page)
-│   └── lpt.py           # LPT approximation (Anna Lazarevic)
-├── tests/               # Unit tests for each algorithm
-│   ├── test_dp.py
-│   └── test_lpt.py
-└── benchmarks/          # Shared benchmarking framework (input generators, runner, plots) 
+├── README.md
+├── aaVideolink                 # Video presentation URL
+├── pytest.ini                  # Pytest configuration
+├── requirements.txt            # Python dependencies
+├── algorithms/                 # Scheduling algorithm implementations
+│   ├── dp.py                   # Exact dynamic programming solver
+│   └── lpt.py                  # LPT approximation solver
+├── benchmarks/                 # Experiment framework and outputs
+│   ├── common.py               # Shared timing and measurement helpers
+│   ├── generators.py           # Reproducible benchmark inputs
+│   ├── dp_generators.py        # Exact-DP-specific inputs
+│   ├── dp_variants.py          # DP optimisation variants
+│   ├── process_helpers.py      # Isolated-process DP runner
+│   ├── run_e1.py ... run_e10.py # Individual experiment scripts
+│   ├── plots.py                # Generates report figures from CSV data
+│   ├── figures/                # Generated experiment charts
+│   └── results/                # Experiment results in CSV format
+├── predictions/
+│   └── predictions             # Expected experiment outcomes
+├── reflections/                # Individual reflection documents
+│   ├── anna.md
+│   └── ThomasAdvAlgsPA2Reflection.pdf
+└── tests/                      # Algorithm, generator, and performance tests
+    ├── test_dp.py
+    ├── test_dp_generators.py
+    ├── test_generators.py
+    ├── test_lpt.py
+    └── test_performance.py
 ```
 
 ## Shared Interface
@@ -55,7 +76,7 @@ From the repository root:
 python -m pytest
 ```
 
-## Shared Performance Experiments
+## Performance Experiments
 
 Run both algorithms on identical generated inputs and show the result table:
 
