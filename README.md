@@ -21,28 +21,28 @@
 41052AT2/
 ├── .gitignore
 ├── README.md
-├── aaVideolink                 # Video presentation URL
-├── pytest.ini                  # Pytest configuration
-├── requirements.txt            # Python dependencies
-├── algorithms/                 # Scheduling algorithm implementations
-│   ├── dp.py                   # Exact dynamic programming solver
-│   └── lpt.py                  # LPT approximation solver
-├── benchmarks/                 # Experiment framework and outputs
-│   ├── common.py               # Shared timing and measurement helpers
-│   ├── generators.py           # Reproducible benchmark inputs
-│   ├── dp_generators.py        # Exact-DP-specific inputs
-│   ├── dp_variants.py          # DP optimisation variants
-│   ├── process_helpers.py      # Isolated-process DP runner
+├── aaVideolink                  # Video presentation URL
+├── pytest.ini                   # Pytest configuration
+├── requirements.txt             # Python dependencies
+├── algorithms/                  # Scheduling algorithm implementations
+│   ├── dp.py                    # Exact dynamic programming solver
+│   └── lpt.py                   # LPT approximation solver
+├── benchmarks/                  # Experiment framework and outputs
+│   ├── common.py                # Shared timing and measurement helpers
+│   ├── generators.py            # Reproducible benchmark inputs
+│   ├── dp_generators.py         # Exact-DP-specific inputs
+│   ├── dp_variants.py           # DP optimisation variants
+│   ├── process_helpers.py       # Isolated-process DP runner
 │   ├── run_e1.py ... run_e10.py # Individual experiment scripts
-│   ├── plots.py                # Generates report figures from CSV data
-│   ├── figures/                # Generated experiment charts
-│   └── results/                # Experiment results in CSV format
+│   ├── plots.py                 # Generates report figures from CSV data
+│   ├── figures/                 # Generated experiment charts
+│   └── results/                 # Experiment results in CSV format
 ├── predictions/
-│   └── predictions             # Expected experiment outcomes
-├── reflections/                # Individual reflection documents
+│   └── predictions              # Expected experiment outcomes
+├── reflections/                 # Individual reflection documents
 │   ├── anna.md
 │   └── ThomasAdvAlgsPA2Reflection.pdf
-└── tests/                      # Algorithm, generator, and performance tests
+└── tests/                       # Algorithm, generator, and performance tests
     ├── test_dp.py
     ├── test_dp_generators.py
     ├── test_generators.py
