@@ -2,7 +2,9 @@
 
 41052 - Advanced Algorithms Programming Assignment 2
 
-[Video Presentation Link](https://www.youtube.com/watch?v=PVLWi72qLqE) 
+[Video Presentation Link](https://www.youtube.com/watch?v=PVLWi72qLqE)
+
+[Written Report](report/41052makespanSchedulingReport.pdf)
 
 ## Makespan Scheduling: Exact DP vs LPT Approximation
 
@@ -39,6 +41,8 @@
 │   └── results/                 # Experiment results in CSV format
 ├── predictions/
 │   └── predictions              # Expected experiment outcomes
+├── report/
+│   └── 41052makespanSchedulingReport.pdf # Final written report
 ├── reflections/                 # Individual reflection documents
 │   ├── anna.md
 │   └── ThomasAdvAlgsPA2Reflection.pdf
